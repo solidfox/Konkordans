@@ -8,6 +8,7 @@ public class Tokenizer {
 	
 	private RandomAccessFile file;
 	private String currentWord;
+	private String nextWord;
 	private long bytePosition;
 	private boolean eof = false;
 	
@@ -21,6 +22,7 @@ public class Tokenizer {
 		} catch (FileNotFoundException e) {
 			System.err.println(fileToTokenize + " was not found.");
 		}
+		this.next();
 	}
 	
 	/**
@@ -28,14 +30,22 @@ public class Tokenizer {
 	 * @return true if there exists more tokens.
 	 */
 	public boolean hasNext() {
-		return !eof;
+		if (!eof) {
+			return true;
+		} else {
+			if (nextWord == null) {
+				return false;
+			}
+		}
+		throw new IllegalStateException("Tokenizer.hasNext() reached an illegal state.");
 	}
 	
 	/**
 	 * Jumps to the next token.
 	 */
 	public void next() {
-		this.currentWord = readWord();
+		this.currentWord = this.nextWord;
+		this.nextWord = this.readWord();
 	}
 	
 	/**
@@ -73,6 +83,13 @@ public class Tokenizer {
 		}
 		
 		byte[] byteArray = bytes.toByteArray();
+		
+		// Check that we didn't reach end of file before reading a word
+		if (byteArray.length == 0) {
+			return null;
+		}
+		
+		// Return the word
 		try {
 			return new String(byteArray, "ISO-8859-1");
 		} catch (UnsupportedEncodingException e) {
@@ -81,6 +98,7 @@ public class Tokenizer {
 		throw new IllegalStateException("readWord could not convert from ISO-8859-1");
 	}
 	
+	// Read one byte from the file
 	private byte readByte() {
 		byte b = 0;
 		try {
@@ -91,6 +109,15 @@ public class Tokenizer {
 		return b;
 	}
 	
+	/**
+	 * Check if the inserted byte is any of the following:
+	 * a number
+	 * a lower case a-z
+	 * an upper case A-Z
+	 * a special character like ÅÄÖ.
+	 * @param b the byte to check
+	 * @return true if the byte is not relevant. false if it is relevant.
+	 */
 	private boolean junk(byte b) {
 		if (b >= 0x20 && b <= 0x2F ||
 			b >= 0x3A && b <= 0x40 ||
@@ -103,7 +130,7 @@ public class Tokenizer {
 	}
 	
 	/**
-	 * This method should be used when we reach the end of file.
+	 * This method should be called when we hit end of file.
 	 */
 	private void reachedEOF() {
 		this.eof = true;
