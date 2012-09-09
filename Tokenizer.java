@@ -1,19 +1,20 @@
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 
 public class Tokenizer {
 	
 	private RandomAccessFile file;
 	private String currentWord;
-	private String currentPosition;
+	private long bytePosition;
+	private boolean eof = false;
 	
+	/**
+	 * Create a new Tokenizer for the file at the given path.
+	 * @param fileToTokenize
+	 */
 	public Tokenizer(String fileToTokenize) {
 		try {
 			this.file = new RandomAccessFile (fileToTokenize, "r");
@@ -27,14 +28,14 @@ public class Tokenizer {
 	 * @return true if there exists more tokens.
 	 */
 	public boolean hasNext() {
-		
+		return !eof;
 	}
 	
 	/**
 	 * Jumps to the next token.
 	 */
 	public void next() {
-		
+		this.currentWord = readWord();
 	}
 	
 	/**
@@ -42,33 +43,42 @@ public class Tokenizer {
 	 * @return the word of the current token.
 	 */
 	public String getWord() {
-		
+		return this.currentWord;
 	}
 	
 	/**
 	 * 
 	 */
-	public String getBytePosition() {
-		
+	public long getBytePosition() {
+		return this.bytePosition;
 	}
 	
 	private String readWord() {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream(); 
-		while(true) {
-			byte currentChar = readByte();
-			if (junk(currentChar)) {
-				break;
-			} else {
-				bytes.write(currentChar);
-			}
+		byte currentChar = readByte();
+		// Remove irrelevant bytes
+		while (junk(currentChar)) {
+			currentChar = readByte();
 		}
+		try {
+			this.bytePosition = file.getFilePointer() - 1;
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		// Read word
+		while(!junk(currentChar)) {
+			bytes.write(currentChar);
+			currentChar = readByte();
+		}
+		
 		byte[] byteArray = bytes.toByteArray();
 		try {
 			return new String(byteArray, "ISO-8859-1");
 		} catch (UnsupportedEncodingException e) {
 			System.out.println("Bloody ISO-8859-1 is not supported!!!");
 		}
-		return "";
+		throw new IllegalStateException("readWord could not convert from ISO-8859-1");
 	}
 	
 	private byte readByte() {
@@ -92,8 +102,11 @@ public class Tokenizer {
 		return false;
 	}
 	
+	/**
+	 * This method should be used when we reach the end of file.
+	 */
 	private void reachedEOF() {
-		
+		this.eof = true;
 	}
 	
 	
@@ -101,8 +114,18 @@ public class Tokenizer {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		Tokenizer t = new Tokenizer("korpus");
+		while (t.hasNext()) {
+			t.next();
+			System.out.println(t.getWord() + " " + t.getBytePosition());
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
 	}
 
 }
