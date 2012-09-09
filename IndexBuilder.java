@@ -27,14 +27,16 @@ public class IndexBuilder {
 		 */
 		while(token.hasNext())
 		{
-			if(map.containsKey(token.getWord())){
-				map.get(token.getWord()).add(token.getBytePosition());
+			String word = token.getWord();
+			long position = token.getBytePosition();
+			if(map.containsKey(word)){
+				map.get(word).add(position);
 			}
 			else{
 				Collection list = new ArrayList();
-				map.put(token.getWord(), list.add(token.getBytePosition()));
+				map.put(word, list.add(position));
 			}
-			System.out.println("Adding:" + "Key: " + token.getWord() +" Value: " + token.getBytePosition());
+			System.out.println("Adding:" + "Key: " + word +" Value: " + position);
 			token.next();
 		}
 		return map;
