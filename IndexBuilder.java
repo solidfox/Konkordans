@@ -11,7 +11,7 @@ public class IndexBuilder {
 
 	public static void main(String[] args) {
 		SortedMap<String,Collection<Integer>> map = new TreeMap<String,Collection<Integer>>();
-		Tokenizer token = new Tokenizer();
+		Tokenizer token = new Tokenizer("korpus");
 		map = fillInSortedMap(token,map);
 		printToFiles(map);
 	}
@@ -19,11 +19,11 @@ public class IndexBuilder {
 	private static SortedMap fillInSortedMap(Tokenizer token, SortedMap<String,Collection<Integer>> map){
 
 		/*
-		 * Så länge det finns en ny token:
-		 * -Kolla om ordet har förekommit
-		 * -(Ordet har förekommit)-->hitta ordet, och lägg in en till byteposition i arraylisten.
-		 * -(Ordet har inte förekommit)--->Skapa en ny lista där bytepositionerna kommer lagras,
-		 * och lägg till ordet med den motsvarande bytepositionen
+		 * SÃ¥ lÃ¤nge det finns en ny token:
+		 * -Kolla om ordet har fÃ¶rekommit
+		 * -(Ordet har fÃ¶rekommit)-->hitta ordet, och lÃ¤gg in en till byteposition i arraylisten.
+		 * -(Ordet har inte fÃ¶rekommit)--->Skapa en ny lista dÃ¤r bytepositionerna kommer lagras,
+		 * och lÃ¤gg till ordet med den motsvarande bytepositionen
 		 */
 		while(token.hasNext())
 		{
@@ -41,9 +41,9 @@ public class IndexBuilder {
 	}
 
 	/*
-	 * För varje unika element, kommer den räkna occurance som börjar på 0
-	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
-	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
+	 * FÃ¶r varje unika element, kommer den rÃ¤kna occurance som bÃ¶rjar pÃ¥ 0
+	 * DÃ¤refter skapar den en ny lista(fÃ¶r att hÃ¥lla enklare koll pÃ¥ den med hjÃ¤lp av en variabel)
+	 * I den varje sÃ¥n lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
 	 */
 	private static SortedMap printToFiles(SortedMap<String,Collection<Integer>> map) throws IOException{
 		int occurance;
