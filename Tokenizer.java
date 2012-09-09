@@ -72,11 +72,13 @@ public class Tokenizer {
 	}
 	
 	private byte readByte() {
+		byte b = 0;
 		try {
-			currentChar = file.readByte();
+			b = file.readByte();
 		} catch (IOException e) {
 			this.reachedEOF();
 		}
+		return b;
 	}
 	
 	private boolean junk(byte b) {
