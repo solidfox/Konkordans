@@ -11,6 +11,8 @@ import java.util.ArrayList;
 public class Tokenizer {
 	
 	private RandomAccessFile file;
+	private String currentWord;
+	private String currentPosition;
 	
 	public Tokenizer(String fileToTokenize) {
 		try {
@@ -53,14 +55,12 @@ public class Tokenizer {
 	private String readWord() {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream(); 
 		while(true) {
-			byte currentChar = 0;
-			try {
-				currentChar = file.readByte();
-			} catch (IOException e) {
-				this.reachedEOF();
+			byte currentChar = readByte();
+			if (junk(currentChar)) {
+				break;
+			} else {
+				bytes.write(currentChar);
 			}
-			if (junk(currentChar)) {break;}
-			bytes.write(currentChar);
 		}
 		byte[] byteArray = bytes.toByteArray();
 		try {
@@ -71,7 +71,13 @@ public class Tokenizer {
 		return "";
 	}
 	
-	
+	private byte readByte() {
+		try {
+			currentChar = file.readByte();
+		} catch (IOException e) {
+			this.reachedEOF();
+		}
+	}
 	
 	private boolean junk(byte b) {
 		if (b >= 0x20 && b <= 0x2F ||
