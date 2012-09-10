@@ -115,6 +115,7 @@ public class Tokenizer {
 	 * a lower case a-z
 	 * an upper case A-Z
 	 * a special character like ÅÄÖ.
+	 * Source http://www.ic.unicamp.br/~stolfi/EXPORT/www/ISO-8859-1-Encoding.html
 	 * @param b the byte to check
 	 * @return true if the byte is not relevant. false if it is relevant.
 	 */
