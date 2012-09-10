@@ -1,6 +1,7 @@
 import java.util.*;
 import java.util.Map.Entry;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -47,10 +48,17 @@ public class IndexBuilder {
 	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
 	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
 	 */
-	private static SortedMap printToFiles(SortedMap<String,Collection<Integer>> map) throws IOException{
+	private static SortedMap printToFiles(SortedMap<String,Collection<Integer>> map) {
 		int occurance;
-		RandomAccessFile instanceIndex = new RandomAccessFile("instanceIndex", "rw");
-		RandomAccessFile wordIndex = new RandomAccessFile("wordIndex", "rw");
+		RandomAccessFile instanceIndex;
+		RandomAccessFile wordIndex;
+		try {
+			instanceIndex = new RandomAccessFile("instanceIndex", "rw");
+			wordIndex = new RandomAccessFile("wordIndex", "rw");
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		long pointer = 0;
 		/*
 		First for-loop gets the amount of bytepositions we will get, and the nestled 
@@ -92,7 +100,7 @@ public class IndexBuilder {
 
 				wordIndex.writeUTF(entry.getKey());
 				wordIndex.writeLong(pointer);
-			}catch (Exception e){//Catch exception if any
+			}catch (IOException e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
 			}
 
