@@ -23,6 +23,7 @@ public class Tokenizer {
 			System.err.println(fileToTokenize + " was not found.");
 		}
 		this.next();
+		this.next();
 	}
 	
 	/**
@@ -144,7 +145,6 @@ public class Tokenizer {
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer("korpus");
 		while (t.hasNext()) {
-			t.next();
 			System.out.println(t.getWord() + " " + t.getBytePosition());
 			try {
 				Thread.sleep(50);
@@ -152,6 +152,7 @@ public class Tokenizer {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			t.next();
 		}
 		
 	}
