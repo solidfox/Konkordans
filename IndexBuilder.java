@@ -1,11 +1,9 @@
 import java.util.*;
 import java.util.Map.Entry;
-import java.io.BufferedWriter;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.lang.Object;
 
 
 public class IndexBuilder {
@@ -19,7 +17,8 @@ public class IndexBuilder {
 	private static SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token){
 		
 		 SortedMap<String,Collection<Long>> map = new TreeMap<String,Collection<Long>>();
-		
+		long fileLength = token.length();
+		 
 		/*
 		 * Så länge det finns en ny token:
 		 * -Kolla om ordet har förekommit
@@ -27,6 +26,7 @@ public class IndexBuilder {
 		 * -(Ordet har inte förekommit)--->Skapa en ny lista där bytepositionerna kommer lagras,
 		 * och lägg till ordet med den motsvarande bytepositionen
 		 */
+		int percent = 1;
 		while(token.hasNext())
 		{
 			String word = token.getWord();
@@ -39,6 +39,11 @@ public class IndexBuilder {
 				list.add(position);
 				map.put(word, list);
 			}
+			if (position > percent * fileLength / 100) {
+				System.out.println(percent + "% " + position + "/" + fileLength);
+				percent++;
+			}
+			
 			token.next();
 		}
 		return map;
@@ -49,10 +54,12 @@ public class IndexBuilder {
 	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
 	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
 	 */
-	private static SortedMap<String, Collection<Long>> printToFiles(SortedMap<String,Collection<Long>> map) {
+	private static SortedMap<String, Collection<Long>> 
+		printToFiles(SortedMap<String,Collection<Long>> map) {
 		int occurance;
 		RandomAccessFile instanceIndex=null;
 		RandomAccessFile wordIndex=null;
+		
 		try {
 			instanceIndex = new RandomAccessFile("instanceIndex", "rw");
 			wordIndex = new RandomAccessFile("wordIndex", "rw");
@@ -105,10 +112,7 @@ public class IndexBuilder {
 				System.err.println("Error: " + e.getMessage());
 			}
 
-
-
-
-			System.out.println(entry.getKey() + " Occurance: " + occurance);	
+	
 		}		
 		try {
 			instanceIndex.close();
