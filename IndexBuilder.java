@@ -39,7 +39,6 @@ public class IndexBuilder {
 				list.add(position);
 				map.put(word, list);
 			}
-			System.out.println("Adding:" + "Key: " + word +" Value: " + position);
 			token.next();
 		}
 		return map;
