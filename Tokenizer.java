@@ -34,11 +34,11 @@ public class Tokenizer {
 		if (!eof) {
 			return true;
 		} else {
-			if (nextWord == null) {
+			if (nextWord == null || nextWord.length() == 0) {
 				return false;
 			}
 		}
-		throw new IllegalStateException("Tokenizer.hasNext() reached an illegal state.");
+		throw new IllegalStateException("Tokenizer.hasNext() reached an illegal state. nextWord = " + nextWord.codePointAt(0));
 	}
 	
 	/**
@@ -64,11 +64,21 @@ public class Tokenizer {
 		return this.bytePosition;
 	}
 	
+	public long length() {
+		try {
+			return this.file.length();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		throw new IllegalStateException("IOError on korpus");
+	}
+	
 	private String readWord() {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream(); 
 		byte currentChar = readByte();
 		// Remove irrelevant bytes
-		while (junk(currentChar)) {
+		while (junk(currentChar) && !this.eof) {
 			currentChar = readByte();
 		}
 		try {
@@ -78,7 +88,7 @@ public class Tokenizer {
 			e1.printStackTrace();
 		}
 		// Read word
-		while(!junk(currentChar)) {
+		while(!junk(currentChar) && !this.eof) {
 			bytes.write(currentChar);
 			currentChar = readByte();
 		}
@@ -121,7 +131,8 @@ public class Tokenizer {
 	 * @return true if the byte is not relevant. false if it is relevant.
 	 */
 	private boolean junk(byte b) {
-		if (b >= 0x20 && b <= 0x2F ||
+		if (b == 0x0a ||
+			b >= 0x20 && b <= 0x2F ||
 			b >= 0x3A && b <= 0x40 ||
 			b >= 0x5B && b <= 0x60 ||
 			b >= 0x7B && b <= 0xBF ||
@@ -145,13 +156,13 @@ public class Tokenizer {
 	public static void main(String[] args) {
 		Tokenizer t = new Tokenizer("korpus");
 		while (t.hasNext()) {
-			System.out.println(t.getWord() + " " + t.getBytePosition());
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+//			System.out.println(t.getWord() + " " + t.getBytePosition());
+//			try {
+//				Thread.sleep(50);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 			t.next();
 		}
 		
