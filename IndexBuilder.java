@@ -57,9 +57,14 @@ public class IndexBuilder {
 	 */
 	private static SortedMap<String, Collection<Long>> 
 		printToFiles(SortedMap<String,Collection<Long>> map) {
+		
+		System.out.println("Entering printToFiles");
+		
 		int occurance;
 		RandomAccessFile instanceIndex=null;
 		RandomAccessFile wordIndex=null;
+		Stopwatch writeTime = new Stopwatch();
+		Stopwatch seekTime = new Stopwatch();
 		
 		try {
 			instanceIndex = new RandomAccessFile("instanceIndex", "rw");
@@ -69,6 +74,7 @@ public class IndexBuilder {
 			e1.printStackTrace();
 		}
 		long pointer = 0;
+		seekTime.start();
 		/*
 		First for-loop gets the amount of bytepositions we will get, and the nestled 
 		one iterates the elements and prints them out 
@@ -85,13 +91,22 @@ public class IndexBuilder {
 			 * 2)Write occurance
 			 * 3)write the bytepositions
 			 */
-
+			seekTime.stop();
+			writeTime.start();
 			try{
 				pointer = instanceIndex.getFilePointer();
 				instanceIndex.writeInt(occurance);
+				writeTime.stop();
+				seekTime.start();
 				for (Long bytepos : listan) {
+					seekTime.stop();
+					writeTime.start();
 					instanceIndex.writeLong(bytepos);
+					writeTime.stop();
+					seekTime.start();
 				}	
+				seekTime.stop();
+				writeTime.start();
 			}catch (Exception e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
 			}
@@ -112,9 +127,11 @@ public class IndexBuilder {
 			}catch (IOException e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
 			}
-
-	
+			
+			writeTime.stop();
+			seekTime.start();
 		}		
+		seekTime.stop();
 		try {
 			instanceIndex.close();
 			wordIndex.close();
@@ -122,10 +139,9 @@ public class IndexBuilder {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		System.out.println("write time: " + writeTime.milliseconds());
+		System.out.println("seek time: " + seekTime.milliseconds());
 		return map;
-
-
-
 	}
 
 }
