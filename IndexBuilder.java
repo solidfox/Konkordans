@@ -11,14 +11,15 @@ import java.lang.Object;
 public class IndexBuilder {
 
 	public static void main(String[] args) {
-		SortedMap<String,Collection<Long>> map = new TreeMap<String,Collection<Long>>();
 		Tokenizer token = new Tokenizer("korpus");
-		map = fillInSortedMap(token,map);
+		SortedMap<String,Collection<Long>> map = fillInSortedMap(token);
 		printToFiles(map);
 	}
 
-	private static SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token, SortedMap<String,Collection<Long>> map){
-
+	private static SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token){
+		
+		 SortedMap<String,Collection<Long>> map = new TreeMap<String,Collection<Long>>();
+		
 		/*
 		 * Så länge det finns en ny token:
 		 * -Kolla om ordet har förekommit
