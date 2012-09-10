@@ -30,6 +30,7 @@ public class IndexBuilder {
 		while(token.hasNext())
 		{
 			String word = token.getWord();
+			word = word.toLowerCase();
 			long position = token.getBytePosition();
 			if(map.containsKey(word)){
 				map.get(word).add(position);
