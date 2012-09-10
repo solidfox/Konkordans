@@ -11,13 +11,13 @@ import java.lang.Object;
 public class IndexBuilder {
 
 	public static void main(String[] args) {
-		SortedMap<String,Collection<Integer>> map = new TreeMap<String,Collection<Integer>>();
+		SortedMap<String,Collection<Long>> map = new TreeMap<String,Collection<Long>>();
 		Tokenizer token = new Tokenizer("korpus");
 		map = fillInSortedMap(token,map);
 		printToFiles(map);
 	}
 
-	private static SortedMap fillInSortedMap(Tokenizer token, SortedMap<String,Collection<Integer>> map){
+	private static SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token, SortedMap<String,Collection<Long>> map){
 
 		/*
 		 * Så länge det finns en ny token:
@@ -34,8 +34,9 @@ public class IndexBuilder {
 				map.get(word).add(position);
 			}
 			else{
-				Collection list = new ArrayList();
-				map.put(word, list.add(position));
+				Collection<Long> list = new ArrayList<Long>();
+				list.add(position);
+				map.put(word, list);
 			}
 			System.out.println("Adding:" + "Key: " + word +" Value: " + position);
 			token.next();
@@ -48,10 +49,10 @@ public class IndexBuilder {
 	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
 	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
 	 */
-	private static SortedMap printToFiles(SortedMap<String,Collection<Integer>> map) {
+	private static SortedMap<String, Collection<Long>> printToFiles(SortedMap<String,Collection<Long>> map) {
 		int occurance;
-		RandomAccessFile instanceIndex;
-		RandomAccessFile wordIndex;
+		RandomAccessFile instanceIndex=null;
+		RandomAccessFile wordIndex=null;
 		try {
 			instanceIndex = new RandomAccessFile("instanceIndex", "rw");
 			wordIndex = new RandomAccessFile("wordIndex", "rw");
@@ -64,9 +65,9 @@ public class IndexBuilder {
 		First for-loop gets the amount of bytepositions we will get, and the nestled 
 		one iterates the elements and prints them out 
 		 */
-		for (Entry<String, Collection<Integer>> entry : map.entrySet())
+		for (Entry<String, Collection<Long>> entry : map.entrySet())
 		{
-			Collection<Integer> listan = entry.getValue();
+			Collection<Long> listan = entry.getValue();
 			occurance = listan.size();
 			/*
 			 * 
@@ -80,8 +81,8 @@ public class IndexBuilder {
 			try{
 				pointer = instanceIndex.getFilePointer();
 				instanceIndex.writeInt(occurance);
-				for (Integer bytepos : listan) {
-					instanceIndex.writeInt(bytepos);
+				for (Long bytepos : listan) {
+					instanceIndex.writeLong(bytepos);
 				}	
 			}catch (Exception e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
@@ -109,8 +110,13 @@ public class IndexBuilder {
 
 			System.out.println(entry.getKey() + " Occurance: " + occurance);	
 		}		
-		instanceIndex.close();
-		wordIndex.close();
+		try {
+			instanceIndex.close();
+			wordIndex.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return map;
 
 
