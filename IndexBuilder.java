@@ -1,6 +1,7 @@
 import java.util.*;
 import java.util.Map.Entry;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -9,11 +10,12 @@ public class IndexBuilder {
 
 	public static void main(String[] args) {
 		Tokenizer token = new Tokenizer("korpus");
-		SortedMap<String,Collection<Long>> map = fillInSortedMap(token);
-		printToFiles(map);
+		IndexBuilder builder = new IndexBuilder();
+		SortedMap<String,Collection<Long>> map = builder.fillInSortedMap(token);
+		builder.printToFiles(map);
 	}
 
-	private static SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token){
+	private SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token){
 		
 		System.out.println("Indexing distinct words.");
 		
@@ -57,13 +59,15 @@ public class IndexBuilder {
 	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
 	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
 	 */
-	private static SortedMap<String, Collection<Long>> 
-		printToFiles(SortedMap<String,Collection<Long>> map) {
+	private void printToFiles(SortedMap<String,Collection<Long>> map) {
 		
 		System.out.println("Entering printToFiles");
 		
 		Path instanceIndexPath = Paths.get("instanceIndex");
 		Path wordIndexPath = Paths.get("wordIndex");
+		
+		this.ensureFresh(instanceIndexPath);
+		this.ensureFresh(wordIndexPath);
 		
 		IndexWriter instanceIndex = new IndexWriter(instanceIndexPath);
 		IndexWriter wordIndex = new IndexWriter(wordIndexPath);
@@ -104,7 +108,19 @@ public class IndexBuilder {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return map;
+		System.out.println("Done.");
 	}
-
+	
+	private void ensureFresh(Path path) {
+		try {
+			if (Files.exists(path)) {
+				Files.delete(path);
+			}
+			Files.createFile(path);
+		} catch (IOException e) {
+			// TODO auto generated
+			e.printStackTrace();
+		}
+		
+	}
 }
