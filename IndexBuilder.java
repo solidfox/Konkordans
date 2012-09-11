@@ -1,6 +1,7 @@
 import java.util.*;
 import java.util.Map.Entry;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -8,16 +9,19 @@ import java.nio.file.Paths;
 public class IndexBuilder {
 
 	public static void main(String[] args) {
-		Tokenizer token = new Tokenizer("small");
-		SortedMap<String,Collection<Long>> map = fillInSortedMap(token);
-		printToFiles(map);
+		Tokenizer token = new Tokenizer("korpus");
+		IndexBuilder builder = new IndexBuilder();
+		HugeSortedWordIndex index = builder.fillInSortedMap(token);
+		SortedMap<String,Collection<Long>> map = index.getMap();
+		builder.printToFiles(map);
 	}
 
-	private static SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token){
+	public HugeSortedWordIndex fillInSortedMap(Tokenizer token){
+		
+		HugeSortedWordIndex index = new HugeSortedWordIndex();
 		
 		System.out.println("Indexing distinct words.");
 		
-		SortedMap<String,Collection<Long>> map = new TreeMap<String,Collection<Long>>();
 		long fileLength = token.length();
 		 
 		/*
@@ -28,19 +32,12 @@ public class IndexBuilder {
 		 * och lägg till ordet med den motsvarande bytepositionen
 		 */
 		int percent = 0;
-		while(token.hasNext())
-		{
-			String word = token.getWord();
-			word = word.toLowerCase();
+		 while (token.hasNext()) {
+			String word = token.getWord().toLowerCase();
 			long position = token.getBytePosition();
-			if(map.containsKey(word)){
-				map.get(word).add(position);
-			}
-			else{
-				Collection<Long> list = new ArrayList<Long>();
-				list.add(position);
-				map.put(word, list);
-			}
+			
+			index.add(word, position);
+			
 			if (position > percent * fileLength / 100) {
 				System.out.println(percent + "%");
 				percent += 10;
@@ -48,8 +45,10 @@ public class IndexBuilder {
 			
 			token.next();
 		}
+		// Add last word.
+		index.add(token.getWord(), token.getBytePosition());
 		System.out.println("100%");
-		return map;
+		return index;
 	}
 
 	/**
@@ -57,13 +56,15 @@ public class IndexBuilder {
 	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
 	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
 	 */
-	private static SortedMap<String, Collection<Long>> 
-		printToFiles(SortedMap<String,Collection<Long>> map) {
+	private void printToFiles(SortedMap<String,Collection<Long>> map) {
 		
 		System.out.println("Entering printToFiles");
 		
 		Path instanceIndexPath = Paths.get("instanceIndex");
 		Path wordIndexPath = Paths.get("wordIndex");
+		
+		this.ensureFresh(instanceIndexPath);
+		this.ensureFresh(wordIndexPath);
 		
 		IndexWriter instanceIndex = new IndexWriter(instanceIndexPath);
 		IndexWriter wordIndex = new IndexWriter(wordIndexPath);
@@ -104,7 +105,19 @@ public class IndexBuilder {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return map;
+		System.out.println("Done.");
 	}
-
+	
+	private void ensureFresh(Path path) {
+		try {
+			if (Files.exists(path)) {
+				Files.delete(path);
+			}
+			Files.createFile(path);
+		} catch (IOException e) {
+			// TODO auto generated
+			e.printStackTrace();
+		}
+		
+	}
 }
