@@ -33,6 +33,7 @@ public class IndexBuilder {
 		 */
 		int percent = 0;
 		 while (token.hasNext()) {
+			token.next();
 			String word = token.getWord().toLowerCase();
 			long position = token.getBytePosition();
 			
@@ -42,8 +43,6 @@ public class IndexBuilder {
 				System.out.println(percent + "%");
 				percent += 10;
 			}
-			
-			token.next();
 		}
 		// Add last word.
 		index.add(token.getWord(), token.getBytePosition());

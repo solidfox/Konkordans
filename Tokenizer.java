@@ -29,7 +29,7 @@ public class Tokenizer {
 		} catch (IOException e) {
 			System.err.println(fileToTokenize + " could not be loaded.");
 		}
-		this.next();
+		// Initialize nextWord
 		this.next();
 	}
 	
@@ -160,6 +160,7 @@ public class Tokenizer {
 		Tokenizer t = new Tokenizer("small");
 		int i = 1;
 		while (t.hasNext()) {
+			t.next();
 			System.out.println(i++ + t.getWord() + " " + t.getBytePosition());
 			try {
 				Thread.sleep(50);
@@ -167,7 +168,6 @@ public class Tokenizer {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			t.next();
 		}
 		
 	}
