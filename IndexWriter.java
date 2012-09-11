@@ -24,7 +24,6 @@ public class IndexWriter {
 	 */
 	public IndexWriter(Path indexFile) {
 		try {
-			
 			OutputStream os = Files.newOutputStream(indexFile, StandardOpenOption.WRITE);
 			countingStream = new CountingOutputStream(os);
 			dataStream = new DataOutputStream(countingStream);

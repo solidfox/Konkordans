@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 public class IndexBuilder {
 
 	public static void main(String[] args) {
-		Tokenizer token = new Tokenizer("korpus");
+		Tokenizer token = new Tokenizer("small");
 		SortedMap<String,Collection<Long>> map = fillInSortedMap(token);
 		printToFiles(map);
 	}

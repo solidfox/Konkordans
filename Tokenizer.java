@@ -17,7 +17,7 @@ public class Tokenizer {
 	private long currentWordPosition;
 	private boolean eof = false;
 	private long byteCounter = 1;
-	
+		
 	/**
 	 * Create a new Tokenizer for the file at the given path.
 	 * @param fileToTokenize
