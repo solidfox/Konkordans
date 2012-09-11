@@ -1,16 +1,22 @@
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Tokenizer {
 	
-	private RandomAccessFile file;
+	private BufferedReader stream;
+	private Path path;
 	private String currentWord;
 	private String nextWord;
-	private long bytePosition;
+	private long lastReadWordPosition;
+	private long currentWordPosition;
 	private boolean eof = false;
+	private long byteCounter = 1;
 	
 	/**
 	 * Create a new Tokenizer for the file at the given path.
@@ -18,9 +24,10 @@ public class Tokenizer {
 	 */
 	public Tokenizer(String fileToTokenize) {
 		try {
-			this.file = new RandomAccessFile (fileToTokenize, "r");
-		} catch (FileNotFoundException e) {
-			System.err.println(fileToTokenize + " was not found.");
+			path = Paths.get(fileToTokenize);
+			this.stream = Files.newBufferedReader(this.path, Charset.forName("ISO-8859-1"));
+		} catch (IOException e) {
+			System.err.println(fileToTokenize + " could not be loaded.");
 		}
 		this.next();
 		this.next();
@@ -46,6 +53,7 @@ public class Tokenizer {
 	 */
 	public void next() {
 		this.currentWord = this.nextWord;
+		this.currentWordPosition = this.lastReadWordPosition;
 		this.nextWord = this.readWord();
 	}
 	
@@ -61,12 +69,12 @@ public class Tokenizer {
 	 * 
 	 */
 	public long getBytePosition() {
-		return this.bytePosition;
+		return this.currentWordPosition;
 	}
 	
 	public long length() {
 		try {
-			return this.file.length();
+			return Files.size(this.path);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -81,12 +89,9 @@ public class Tokenizer {
 		while (junk(currentChar) && !this.eof) {
 			currentChar = readByte();
 		}
-		try {
-			this.bytePosition = file.getFilePointer() - 1;
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+		// Store bytePosition
+		this.lastReadWordPosition = this.byteCounter - 1;
+		
 		// Read word
 		while(!junk(currentChar) && !this.eof) {
 			bytes.write(currentChar);
@@ -113,10 +118,13 @@ public class Tokenizer {
 	private byte readByte() {
 		byte b = 0;
 		try {
-			b = file.readByte();
+			b = (byte) stream.read();
 		} catch (IOException e) {
-			this.reachedEOF();
+			// TODO
+			e.printStackTrace();
 		}
+		if (b != -1) {++byteCounter;}
+		else {this.reachedEOF();}
 		return b;
 	}
 	
@@ -154,15 +162,15 @@ public class Tokenizer {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Tokenizer t = new Tokenizer("korpus");
+		Tokenizer t = new Tokenizer("korpus-small");
 		while (t.hasNext()) {
-//			System.out.println(t.getWord() + " " + t.getBytePosition());
-//			try {
-//				Thread.sleep(50);
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
+			System.out.println(t.getWord() + " " + t.getBytePosition());
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			t.next();
 		}
 		

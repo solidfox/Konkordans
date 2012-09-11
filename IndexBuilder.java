@@ -1,9 +1,8 @@
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 
 public class IndexBuilder {
@@ -16,7 +15,7 @@ public class IndexBuilder {
 
 	private static SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token){
 		
-		 SortedMap<String,Collection<Long>> map = new TreeMap<String,Collection<Long>>();
+		SortedMap<String,Collection<Long>> map = new TreeMap<String,Collection<Long>>();
 		long fileLength = token.length();
 		 
 		/*
@@ -50,7 +49,7 @@ public class IndexBuilder {
 		return map;
 	}
 
-	/*
+	/**
 	 * För varje unika element, kommer den räkna occurance som börjar på 0
 	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
 	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
@@ -60,78 +59,41 @@ public class IndexBuilder {
 		
 		System.out.println("Entering printToFiles");
 		
-		int occurance;
-		RandomAccessFile instanceIndex=null;
-		RandomAccessFile wordIndex=null;
-		Stopwatch writeTime = new Stopwatch();
-		Stopwatch seekTime = new Stopwatch();
+		Path instanceIndexPath = Paths.get("instanceIndex");
+		Path wordIndexPath = Paths.get("wordIndex");
 		
-		try {
-			instanceIndex = new RandomAccessFile("instanceIndex", "rw");
-			wordIndex = new RandomAccessFile("wordIndex", "rw");
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		long pointer = 0;
-		seekTime.start();
+		IndexWriter instanceIndex = new IndexWriter(instanceIndexPath);
+		IndexWriter wordIndex = new IndexWriter(wordIndexPath);
+		
 		/*
 		First for-loop gets the amount of bytepositions we will get, and the nestled 
 		one iterates the elements and prints them out 
 		 */
 		for (Entry<String, Collection<Long>> entry : map.entrySet())
 		{
-			Collection<Long> listan = entry.getValue();
-			occurance = listan.size();
-			/*
-			 * 
-			 * Write to InstanceIndex
-			 * 
-			 * 1)Save pointer
-			 * 2)Write occurance
-			 * 3)write the bytepositions
-			 */
-			seekTime.stop();
-			writeTime.start();
+			String word = entry.getKey();
+			long instancePointer = instanceIndex.getFilePointer();
+
+			Collection<Long> korpusPointers = entry.getValue();
+			
+			// Write to instanceIndex
 			try{
-				pointer = instanceIndex.getFilePointer();
-				instanceIndex.writeInt(occurance);
-				writeTime.stop();
-				seekTime.start();
-				for (Long bytepos : listan) {
-					seekTime.stop();
-					writeTime.start();
+				instanceIndex.writeInt(korpusPointers.size());
+				for (Long bytepos : korpusPointers) {
 					instanceIndex.writeLong(bytepos);
-					writeTime.stop();
-					seekTime.start();
-				}	
-				seekTime.stop();
-				writeTime.start();
+				}
 			}catch (Exception e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
 			}
-
-
-
-			/*
-			 * 
-			 * Write to WordIndex
-			 * 1)Write word
-			 * 2)Write byteposition
-			 */
-
+			
+			// Write word index 
 			try{
-
-				wordIndex.writeUTF(entry.getKey());
-				wordIndex.writeLong(pointer);
+				wordIndex.writeUTF(word);
+				wordIndex.writeLong(instancePointer);
 			}catch (IOException e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
 			}
-			
-			writeTime.stop();
-			seekTime.start();
-		}		
-		seekTime.stop();
+		}
 		try {
 			instanceIndex.close();
 			wordIndex.close();
@@ -139,8 +101,6 @@ public class IndexBuilder {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		System.out.println("write time: " + writeTime.milliseconds());
-		System.out.println("seek time: " + seekTime.milliseconds());
 		return map;
 	}
 
