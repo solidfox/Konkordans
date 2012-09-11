@@ -38,14 +38,10 @@ public class Tokenizer {
 	 * @return true if there exists more tokens.
 	 */
 	public boolean hasNext() {
-		if (!eof) {
-			return true;
-		} else {
-			if (nextWord == null || nextWord.length() == 0) {
-				return false;
-			}
+		if (eof && (nextWord == null || nextWord.length() == 0)) {
+			return false;
 		}
-		throw new IllegalStateException("Tokenizer.hasNext() reached an illegal state. nextWord = " + nextWord.codePointAt(0));
+		return true;
 	}
 	
 	/**
@@ -161,9 +157,10 @@ public class Tokenizer {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Tokenizer t = new Tokenizer("korpus-small");
+		Tokenizer t = new Tokenizer("small");
+		int i = 1;
 		while (t.hasNext()) {
-			System.out.println(t.getWord() + " " + t.getBytePosition());
+			System.out.println(i++ + t.getWord() + " " + t.getBytePosition());
 			try {
 				Thread.sleep(50);
 			} catch (InterruptedException e) {

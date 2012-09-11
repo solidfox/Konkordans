@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 public class IndexBuilder {
 
 	public static void main(String[] args) {
-		Tokenizer token = new Tokenizer("korpus");
+		Tokenizer token = new Tokenizer("small");
 		IndexBuilder builder = new IndexBuilder();
 		HugeSortedWordIndex index = builder.fillInSortedMap(token);
 		SortedMap<String,Collection<Long>> map = index.getMap();
