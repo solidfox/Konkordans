@@ -1,5 +1,7 @@
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,7 +32,6 @@ public class IndexReader {
 			InputStream os = Files.newInputStream(indexFile, StandardOpenOption.READ);
 			countingStream = new CountingInputStream(os);
 			dataStream = new DataInputStream(countingStream);
-			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -61,7 +62,9 @@ public class IndexReader {
 	/**
 	 * Read a string as unicode to the file. Starts of with a short defining the length of the string.
 	 * @param str the string to read.
-	 * @throws IOException ...yes.
+	 * @throws EOFException - if this input stream reaches the end before reading all the bytes.
+IOException - the stream has been closed and the contained input stream does not support reading after close, or another I/O error occurs.
+UTFDataFormatException - if the bytes do not represent a valid modified UTF-8 encoding of a string.
 	 */
 	public String readUTF() throws IOException {
 		return dataStream.readUTF();
@@ -87,7 +90,24 @@ public class IndexReader {
 	}
 
 
-
+	public void skip(long bytes) throws IOException {
+		dataStream.skip(bytes);
+	}
+	
+	
+	public String readChars(int numberOfChars) throws IOException {
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try {
+			for (int i = 0; i < numberOfChars; i++) {
+				bytes.write(dataStream.readChar());
+			}
+		} catch (EOFException e) {
+			// Do nothing.
+		}
+		return bytes.toString("ISO-8859-1");
+	}
+	
+	
 	/**
 	 * @param args
 	 */

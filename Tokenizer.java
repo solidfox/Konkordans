@@ -16,7 +16,7 @@ public class Tokenizer {
 	private long lastReadWordPosition;
 	private long currentWordPosition;
 	private boolean eof = false;
-	private long byteCounter = 1;
+	private long byteCounter = 0;
 	
 	/**
 	 * Create a new Tokenizer for the file at the given path.
