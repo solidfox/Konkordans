@@ -11,15 +11,17 @@ public class IndexBuilder {
 	public static void main(String[] args) {
 		Tokenizer token = new Tokenizer("korpus");
 		IndexBuilder builder = new IndexBuilder();
-		SortedMap<String,Collection<Long>> map = builder.fillInSortedMap(token);
+		HugeSortedWordIndex index = builder.fillInSortedMap(token);
+		SortedMap<String,Collection<Long>> map = index.getMap();
 		builder.printToFiles(map);
 	}
 
-	private SortedMap<String, Collection<Long>> fillInSortedMap(Tokenizer token){
+	public HugeSortedWordIndex fillInSortedMap(Tokenizer token){
+		
+		HugeSortedWordIndex index = new HugeSortedWordIndex();
 		
 		System.out.println("Indexing distinct words.");
 		
-		SortedMap<String,Collection<Long>> map = new TreeMap<String,Collection<Long>>();
 		long fileLength = token.length();
 		 
 		/*
@@ -30,19 +32,12 @@ public class IndexBuilder {
 		 * och lägg till ordet med den motsvarande bytepositionen
 		 */
 		int percent = 0;
-		while(token.hasNext())
-		{
-			String word = token.getWord();
-			word = word.toLowerCase();
+		 while (token.hasNext()) {
+			String word = token.getWord().toLowerCase();
 			long position = token.getBytePosition();
-			if(map.containsKey(word)){
-				map.get(word).add(position);
-			}
-			else{
-				Collection<Long> list = new ArrayList<Long>();
-				list.add(position);
-				map.put(word, list);
-			}
+			
+			index.add(word, position);
+			
 			if (position > percent * fileLength / 100) {
 				System.out.println(percent + "%");
 				percent += 10;
@@ -50,8 +45,10 @@ public class IndexBuilder {
 			
 			token.next();
 		}
+		// Add last word.
+		index.add(token.getWord(), token.getBytePosition());
 		System.out.println("100%");
-		return map;
+		return index;
 	}
 
 	/**
