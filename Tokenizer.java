@@ -17,7 +17,7 @@ public class Tokenizer {
 	private long currentWordPosition;
 	private boolean eof = false;
 	private long byteCounter = 1;
-		
+	
 	/**
 	 * Create a new Tokenizer for the file at the given path.
 	 * @param fileToTokenize
@@ -139,8 +139,7 @@ public class Tokenizer {
 	 * @return true if the byte is not relevant. false if it is relevant.
 	 */
 	private boolean junk(byte b) {
-		if (b == 0x0a ||
-			b >= 0x20 && b <= 0x2F ||
+		if (b >= 0x01 && b <= 0x2F ||
 			b >= 0x3A && b <= 0x40 ||
 			b >= 0x5B && b <= 0x60 ||
 			b >= 0x7B && b <= 0xBF ||
