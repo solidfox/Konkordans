@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.SortedMap;
-
 import org.junit.Test;
 
 
@@ -23,11 +20,8 @@ public class SearcherTest {
 			e.printStackTrace();
 		}
 		
-		Tokenizer token = new Tokenizer("test/testFile");
-		IndexBuilder builder = new IndexBuilder();
-		HugeSortedWordIndex index = builder.fillInSortedMap(token);
-		SortedMap<String,Collection<Long>> map = index.getMap();
-		// builder.printToFiles(map);
+		IndexBuilder builder = new IndexBuilder("test/testFile");
+		builder.writeIndexes("test/wordIndex", "test/instanceIndex");
 	}
 	
 	

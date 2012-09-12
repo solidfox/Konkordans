@@ -2,25 +2,29 @@
 
 import static org.junit.Assert.*;
 
-import java.util.Collection;
-import java.util.SortedMap;
-
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import org.junit.Test;
 
 public class IndexBuilderTest {
 	
 	@Test
-	public void fillInSortedMap() {
-		Tokenizer token = new Tokenizer("test/korpus-small");
-		IndexBuilder builder = new IndexBuilder();
-		SortedMap<String,Collection<Long>> map = builder.fillInSortedMap(token).getMap();
+	public void test() {
+		IndexBuilder builder = new IndexBuilder("test/korpus-small");
+		builder.writeIndexes("test/smallWordIndex", "test/smallInstanceIndex");
 		String[] list = {"våren", "då", "organisationen", "kvinnofrihet", "utsåg", "en", "arbetsgrupp", "att", "utforma", "förslag", "till", "aktioner", "som", "skulle", "motverka", "förtryck", "och", "diskriminering", "av", "kvinnor"};
+		Arrays.sort(list);
+		IndexReader reader = new IndexReader(Paths.get("test/smallWordIndex"));
 		for (String key : list) {
-			assertTrue("Word " + key + " was not in list.", map.containsKey(key));
+			try {
+				String readWord = reader.readUTF();
+				reader.readLong();
+				assertEquals("Word " + key + " was not in written index.", key, readWord);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				fail("IOException");
+			}
 		}
-		assertEquals("Word count was wrong.", 20, map.size());
-		Collection<Long> kvinnofrihet = map.get("kvinnofrihet");
-		assertTrue("Kvinnofrihet was found on position " + kvinnofrihet.toString() + " not 25", map.get("kvinnofrihet").contains((long)25));
 	}
-
 }

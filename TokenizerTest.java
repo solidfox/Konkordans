@@ -1,8 +1,5 @@
 import static org.junit.Assert.*;
 
-import java.util.Collection;
-import java.util.SortedMap;
-
 import org.junit.Test;
 
 
