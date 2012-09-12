@@ -20,10 +20,8 @@ public class Searcher {
 	Path korpusPath;
 	Map<String, Long> trieRoot;
 	
-	public Searcher(
-			String wordIndexPath, 
-			String instanceIndexPath,
-			String korpusPath) {
+	public Searcher(String wordIndexPath, String instanceIndexPath,	String korpusPath) {
+		
 		this.wordIndexPath 			= Paths.get(wordIndexPath);
 		this.instanceIndexPath 		= Paths.get(instanceIndexPath);
 		this.korpusPath				= Paths.get(korpusPath);
@@ -174,7 +172,15 @@ public class Searcher {
 		Stopwatch time = new Stopwatch();
 		time.start();
 		try {
-			System.out.println(searcher.findWord("kvinnor"));
+			System.out.println(searcher.findWord("bevisen"));
+			
+			
+			/*
+			 * Det blir konstigt, eftersom sista tre orden för "bevisen" (de new yorks g...) skrivs ut med ett radbyte mellan,
+			 * vilket skiljer sig från kursens sida. Minor issue egentligen, men kan vara en del av något större - värt att undersöka.
+			 */
+			
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
