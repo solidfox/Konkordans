@@ -15,25 +15,73 @@ import java.util.Map;
  */
 public class Searcher {
 	
-	Path wordIndexFile;
-	Path instanceIndexFilePath;
+	Path wordIndexPath;
+	Path instanceIndexPath;
+	Path korpusPath;
 	Map<String, Long> trieRoot;
 	
-	public Searcher() {
-		wordIndexFile = Paths.get("wordIndex");
-		instanceIndexFilePath = Paths.get("instanceIndex");
-		trieRoot = new HashMap<String, Long>();
+	public Searcher(
+			String wordIndexPath, 
+			String instanceIndexPath,
+			String korpusPath) {
+		this.wordIndexPath 			= Paths.get(wordIndexPath);
+		this.instanceIndexPath 		= Paths.get(instanceIndexPath);
+		this.korpusPath				= Paths.get(korpusPath);
 		
-		IndexReader wordIndexReader = new IndexReader(wordIndexFile); 
+		this.trieRoot = this.buildTrieRoot();
+		
+		System.out.println(trieRoot.size());
+	}
+	
+	public String findWord(String word) throws IOException {
+		// Get the truplet pointer
+		long trupletPointer = this.trieRoot.get(this.getTruplet(word));
+		// Find the word in the wordIndex
+		long instanceIndexPointer = this.findInstanceIndexPointer(trupletPointer, word);
+		// TODO handle if word didn't exist.
+		// Fetch instance pointers for word
+		long[] instancePointers = readInstancePointers(instanceIndexPointer);
+		
+		String result = this.buildResult(instancePointers, word.length());
+		
+		return result;
+	}
+
+	private String buildResult(long[] instancePointers, int wordLength) throws IOException {
+		IndexReader korpus = new IndexReader(Paths.get("korpus"));
+		StringBuilder out = new StringBuilder(instancePointers.length * 50);
+		
+		Arrays.sort(instancePointers);
+		
+		long lastPointer = 0;
+		for (long pointer : instancePointers) {
+			long bytesToSkip = pointer - 30 - lastPointer;
+			// Make sure we don't try to skip backwards
+			bytesToSkip = (bytesToSkip >= 0 ? bytesToSkip : 0);
+			korpus.skip(bytesToSkip);
+			String context = korpus.readChars(60 + wordLength);
+			context = context.replace("\n", " ");
+			out.append(context);
+			out.append("\n");
+			lastPointer = korpus.getFilePointer();
+		}
+		return out.toString();
+	}
+
+	private Map<String, Long> buildTrieRoot() {
+		
+		HashMap<String, Long> trieRoot = new HashMap<String, Long>();
+		IndexReader wordIndexReader = new IndexReader(wordIndexPath); 
+		
 		String word = "";
 		long position = 0;
-		
 		boolean eof = false;
 		while (!eof) {
 			try {
 				position = wordIndexReader.getFilePointer();
 				word = wordIndexReader.readUTF();
-				wordIndexReader.readLong(); // Throw away instanceIndex address
+				// Throw away instanceIndex address
+				wordIndexReader.readLong(); 
 			} catch (EOFException e) {
 				eof = true;
 				break;
@@ -47,7 +95,8 @@ public class Searcher {
 				trieRoot.put(truplet, position);
 			}
 		}
-		System.out.println(trieRoot.size());
+		
+		return trieRoot;
 	}
 	
 	/**
@@ -63,31 +112,6 @@ public class Searcher {
 		return truplet;
 	}
 	
-	public String findWord(String word) throws IOException {
-		// Open the korpus file
-		IndexReader korpus = new IndexReader(Paths.get("korpus"));
-		// Get the truplet pointer
-		long trupletPointer = this.trieRoot.get(this.getTruplet(word));
-		// Find the word in the wordIndex
-		long instanceIndexPointer = this.findInstanceIndexPointer(trupletPointer, word);
-		// Fetch instance pointers for word
-		long[] instancePointers = readInstancePointers(instanceIndexPointer);
-		Arrays.sort(instancePointers);
-		StringBuilder out = new StringBuilder(instancePointers.length * 50);
-		long lastPointer = 0;
-		for (long pointer : instancePointers) {
-			long bytesToSkip = pointer - 20 - lastPointer;
-			// Make sure we don't try to skip backwards
-			bytesToSkip = (bytesToSkip >= 0 ? bytesToSkip : 0);
-			korpus.skip(bytesToSkip);
-			String context = korpus.readChars(40 + word.length());
-			out.append(context);
-			out.append("\n");
-			lastPointer = pointer;
-		}
-		return out.toString();
-	}
-	
 	/**
 	 * Returns -1 if no word was found.
 	 * @param wordIndexPointer
@@ -95,14 +119,13 @@ public class Searcher {
 	 * @return
 	 */
 	private long findInstanceIndexPointer(long wordIndexPointer, String word) {
-		IndexReader wordIndexReader = new IndexReader(wordIndexFile);
+		IndexReader wordIndexReader = new IndexReader(wordIndexPath);
 		try {
 			wordIndexReader.skip(wordIndexPointer);
 			// Read in first word
 			String currentWord = wordIndexReader.readUTF();
 			long currentPointer = wordIndexReader.readLong();
 			while (!currentWord.equals(word)) {
-				System.out.println(currentWord);
 				// Make sure we don't search to far
 				if (!currentWord.startsWith(this.getTruplet(word))) {
 					return -1;
@@ -118,13 +141,17 @@ public class Searcher {
 	
 	private long[] readInstancePointers(long instanceIndexPointer) {
 		try {
-			IndexReader wordIndex = new IndexReader(instanceIndexFilePath);
-			wordIndex.skip(instanceIndexPointer);
-			int instanceCount = wordIndex.readInt();
+			IndexReader instanceIndex = new IndexReader(instanceIndexPath);
+			
+			instanceIndex.skip(instanceIndexPointer);
+			
+			int instanceCount = instanceIndex.readInt();
+			
 			long[] instancePointers = new long[instanceCount];
 			for (int i = 0; i < instanceCount; i++) {
-				instancePointers[i] = wordIndex.readLong();
+				instancePointers[i] = instanceIndex.readLong();
 			}
+			
 			return instancePointers;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -134,12 +161,16 @@ public class Searcher {
 	}
 	
 	public static void main(String[] args) {
-		Searcher searcher = new Searcher();
+		Searcher searcher = new Searcher("wordIndex", "instanceIndex", "korpus");
+		Stopwatch time = new Stopwatch();
+		time.start();
 		try {
-			System.out.println(searcher.findWord("vasaparken"));
+			System.out.println(searcher.findWord("kvinnor"));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		};
+		time.stop();
+		System.out.println("Search done in " + time.milliseconds() + " milliseconds.");
 	}
 }

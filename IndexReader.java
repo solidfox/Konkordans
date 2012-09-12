@@ -96,15 +96,13 @@ UTFDataFormatException - if the bytes do not represent a valid modified UTF-8 en
 	
 	
 	public String readChars(int numberOfChars) throws IOException {
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		byte[] bytes = new byte[numberOfChars];
 		try {
-			for (int i = 0; i < numberOfChars; i++) {
-				bytes.write(dataStream.readChar());
-			}
+			dataStream.read(bytes, 0, numberOfChars);
 		} catch (EOFException e) {
 			// Do nothing.
 		}
-		return bytes.toString("ISO-8859-1");
+		return new String(bytes, "ISO-8859-1");
 	}
 	
 	

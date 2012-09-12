@@ -14,7 +14,7 @@ public class SearcherTest {
 
 	Path testFile = Paths.get("test/testFile");
 	
-	public IndexReaderTest() {
+	public SearcherTest() {
 		try {
 			Files.deleteIfExists(testFile);
 			Files.createFile(testFile);
@@ -22,6 +22,7 @@ public class SearcherTest {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 		Tokenizer token = new Tokenizer("test/testFile");
 		IndexBuilder builder = new IndexBuilder();
 		HugeSortedWordIndex index = builder.fillInSortedMap(token);

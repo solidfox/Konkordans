@@ -57,4 +57,25 @@ public class IndexReaderTest {
 			e.printStackTrace();
 		}
 	}
+	
+	@Test
+	public void readChars() {
+		IndexWriter iw = new IndexWriter(testIndex);
+		IndexReader ir = new IndexReader(testIndex);
+		long pointer = 0;
+		try {
+			iw.writeUTF("First string");
+			iw.writeLong(1337);
+			pointer = iw.getFilePointer();
+			String sought = "Second string"; 
+			iw.writeUTF(sought);
+			ir.skip(pointer + 2);
+			String found = ir.readChars(13);
+			assertEquals(sought, found);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 }
