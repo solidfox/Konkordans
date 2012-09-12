@@ -1,12 +1,5 @@
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import com.sun.istack.internal.FinalArrayList;
 
 /**
  * Quite full of bugs due to my brain working on overtime but I think you'll get the point.
@@ -16,20 +9,26 @@ import java.util.Map;
  */
 public class Searcher {
 	
-	Path wordIndexPath;
-	Path instanceIndexPath;
-	Path korpusPath;
+	final Path wordIndexPath;
+	final Path instanceIndexPath;
+	final Path korpusPath;
 	Map<String, Long> trieRoot;
 	
-	public Searcher(String wordIndexPath, String instanceIndexPath,	String korpusPath) {
-		
+	public Searcher(
+			String wordIndexPath, 
+			String instanceIndexPath,
+			String korpusPath) {
 		this.wordIndexPath 			= Paths.get(wordIndexPath);
 		this.instanceIndexPath 		= Paths.get(instanceIndexPath);
 		this.korpusPath				= Paths.get(korpusPath);
 		
-		this.trieRoot = this.buildTrieRoot();
+		Stopwatch time = new Stopwatch();
 		
-		System.out.println(trieRoot.size());
+		time.start();
+		this.trieRoot = this.buildTrieRoot();
+		time.stop();
+		
+		System.out.println(trieRoot.size() + " trupplets built in " + time.milliseconds() + " milliseconds. \n");
 	}
 	
 	public String findWord(String word) throws IOException {
@@ -41,18 +40,19 @@ public class Searcher {
 		// Fetch instance pointers for word
 		long[] instancePointers = readInstancePointers(instanceIndexPointer);
 		
-		String result = this.buildResult(instancePointers, word.length());
+		String result = this.buildResult(instancePointers, word);
 		
 		return result;
 	}
 
 	private Map<String, Long> buildTrieRoot() {
 		
-		HashMap<String, Long> trieRoot = new HashMap<String, Long>();
-		IndexReader wordIndexReader = new IndexReader(wordIndexPath); 
+		final HashMap<String, Long> trieRoot = new HashMap<String, Long>();
+		final IndexReader wordIndexReader = new IndexReader(wordIndexPath); 
 		
 		String word = "";
 		long position = 0;
+		String lastTruplet = "";
 		boolean eof = false;
 		while (!eof) {
 			try {
@@ -67,9 +67,10 @@ public class Searcher {
 				e.printStackTrace();
 			}
 			
-			String truplet = this.getTruplet(word);
+			final String truplet = this.getTruplet(word);
 			
-			if (!trieRoot.containsKey(truplet)) {
+			if (! truplet.equals(lastTruplet)) {
+				lastTruplet = truplet;
 				trieRoot.put(truplet, position);
 			}
 		}
@@ -84,9 +85,9 @@ public class Searcher {
 	 * @return the first three letters in a given string. 
 	 * Or, if the string is shorter than 3 letters, returns the string unmodified.
 	 */
-	private String getTruplet(String word) {
+	private String getTruplet(final String word) {
 		int trupletEnd = (word.length() < 3 ? word.length() : 3);
-		String truplet = word.substring(0, trupletEnd);
+		final String truplet = word.substring(0, trupletEnd);
 		return truplet;
 	}
 	
@@ -138,10 +139,11 @@ public class Searcher {
 		throw new IllegalStateException("Reached illegal state while reading instance pointers.");
 	}
 	
-	private String buildResult(long[] instancePointers, int wordLength) throws IOException {
+	private String buildResult(long[] instancePointers, String word) throws IOException {
 		IndexReader korpus = new IndexReader(Paths.get("korpus"));
-		StringBuilder out = new StringBuilder(instancePointers.length * 50);
+		StringBuilder out = new StringBuilder(instancePointers.length * 70);
 		int desiredNumberOfResults = 25;
+		int wordLength = word.length();
 		
 		Arrays.sort(instancePointers);
 		
@@ -152,14 +154,16 @@ public class Searcher {
 		
 		long lastPointer = 0;
 		for (int i = 0; i < numberOfResults; i++) {
-			long pointer = instancePointers[i];
-			long bytesToSkip = pointer - 30 - lastPointer;
+			long pointer = instancePointers[i] - 30;
+			long bytesToSkip = pointer - lastPointer;
 			// TODO what if we've already skipped the previous bytes?
 			// TODO that is, if the word exists in close succession
 			// Make sure we don't try to skip backwards
 			bytesToSkip = (bytesToSkip >= 0 ? bytesToSkip : 0);
 			korpus.skip(bytesToSkip);
+			korpus.mark();
 			String context = korpus.readChars(60 + wordLength);
+			korpus.reset();
 			context = context.replace("\n", " ");
 			out.append(context);
 			out.append("\n");
@@ -173,15 +177,7 @@ public class Searcher {
 		Stopwatch time = new Stopwatch();
 		time.start();
 		try {
-			System.out.println(searcher.findWord("bevisen"));
-			
-			
-			/*
-			 * Det blir konstigt, eftersom sista tre orden för "bevisen" (de new yorks g...) skrivs ut med ett radbyte mellan,
-			 * vilket skiljer sig från kursens sida. Minor issue egentligen, men kan vara en del av något större - värt att undersöka.
-			 */
-			
-			
+			System.out.println(searcher.findWord("kvinnor"));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

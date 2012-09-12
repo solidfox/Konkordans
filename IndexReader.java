@@ -103,6 +103,21 @@ UTFDataFormatException - if the bytes do not represent a valid modified UTF-8 en
 	
 	
 	/**
+	 * Mark current position in stream so we can return later.
+	 */
+	public void mark() {
+		dataStream.mark(4096);
+	}
+	
+	/**
+	 * Reset stream to the previously marked position.
+	 * @throws IOException 
+	 */
+	public void reset() throws IOException {
+		dataStream.reset();
+	}
+	
+	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
