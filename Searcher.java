@@ -47,27 +47,6 @@ public class Searcher {
 		return result;
 	}
 
-	private String buildResult(long[] instancePointers, int wordLength) throws IOException {
-		IndexReader korpus = new IndexReader(Paths.get("korpus"));
-		StringBuilder out = new StringBuilder(instancePointers.length * 50);
-		
-		Arrays.sort(instancePointers);
-		
-		long lastPointer = 0;
-		for (long pointer : instancePointers) {
-			long bytesToSkip = pointer - 30 - lastPointer;
-			// Make sure we don't try to skip backwards
-			bytesToSkip = (bytesToSkip >= 0 ? bytesToSkip : 0);
-			korpus.skip(bytesToSkip);
-			String context = korpus.readChars(60 + wordLength);
-			context = context.replace("\n", " ");
-			out.append(context);
-			out.append("\n");
-			lastPointer = korpus.getFilePointer();
-		}
-		return out.toString();
-	}
-
 	private Map<String, Long> buildTrieRoot() {
 		
 		HashMap<String, Long> trieRoot = new HashMap<String, Long>();
@@ -160,6 +139,36 @@ public class Searcher {
 		throw new IllegalStateException("Reached illegal state while reading instance pointers.");
 	}
 	
+	private String buildResult(long[] instancePointers, int wordLength) throws IOException {
+		IndexReader korpus = new IndexReader(Paths.get("korpus"));
+		StringBuilder out = new StringBuilder(instancePointers.length * 50);
+		int desiredNumberOfResults = 25;
+		
+		Arrays.sort(instancePointers);
+		
+		int numberOfResults = instancePointers.length;
+		out.append("There are " + numberOfResults + " instances of the word.\n");
+		
+		numberOfResults = (numberOfResults > desiredNumberOfResults ? desiredNumberOfResults : numberOfResults);
+		
+		long lastPointer = 0;
+		for (int i = 0; i < numberOfResults; i++) {
+			long pointer = instancePointers[i];
+			long bytesToSkip = pointer - 30 - lastPointer;
+			// TODO what if we've already skipped the previous bytes?
+			// TODO that is, if the word exists in close succession
+			// Make sure we don't try to skip backwards
+			bytesToSkip = (bytesToSkip >= 0 ? bytesToSkip : 0);
+			korpus.skip(bytesToSkip);
+			String context = korpus.readChars(60 + wordLength);
+			context = context.replace("\n", " ");
+			out.append(context);
+			out.append("\n");
+			lastPointer = korpus.getFilePointer();
+		}
+		return out.toString();
+	}
+
 	public static void main(String[] args) {
 		Searcher searcher = new Searcher("wordIndex", "instanceIndex", "korpus");
 		Stopwatch time = new Stopwatch();
