@@ -118,8 +118,8 @@ public class Searcher {
 	
 	private long[] readInstancePointers(long instanceIndexPointer) {
 		try {
-			RandomAccessFile wordIndex = new RandomAccessFile("instanceIndex", "r");
-			wordIndex.seek(instanceIndexPointer);
+			IndexReader wordIndex = new IndexReader(instanceIndexFilePath);
+			wordIndex.skip(instanceIndexPointer);
 			int instanceCount = wordIndex.readInt();
 			long[] instancePointers = new long[instanceCount];
 			for (int i = 0; i < instanceCount; i++) {
