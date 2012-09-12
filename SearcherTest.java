@@ -27,8 +27,7 @@ public class SearcherTest {
 		IndexBuilder builder = new IndexBuilder();
 		HugeSortedWordIndex index = builder.fillInSortedMap(token);
 		SortedMap<String,Collection<Long>> map = index.getMap();
-		builder.printToFiles(map);
-		new Searcher();
+		// builder.printToFiles(map);
 	}
 	
 	

@@ -14,7 +14,6 @@ public class IndexBuilder {
 		HugeSortedWordIndex index = builder.fillInSortedMap(token);
 		SortedMap<String,Collection<Long>> map = index.getMap();
 		builder.printToFiles(map);
-		new Searcher();
 	}
 
 	public HugeSortedWordIndex fillInSortedMap(Tokenizer token){
