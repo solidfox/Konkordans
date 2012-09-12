@@ -15,6 +15,7 @@ import org.apache.commons.io.output.CountingOutputStream;
  */
 public class IndexWriter {
 	
+	private Path indexFile;
 	private DataOutputStream dataStream;
 	private CountingOutputStream countingStream;
 	
@@ -23,11 +24,11 @@ public class IndexWriter {
 	 * @param indexFile the file to write to.
 	 */
 	public IndexWriter(Path indexFile) {
+		this.indexFile = indexFile;
 		try {
 			OutputStream os = Files.newOutputStream(indexFile, StandardOpenOption.WRITE);
 			countingStream = new CountingOutputStream(os);
 			dataStream = new DataOutputStream(countingStream);
-			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -83,7 +84,19 @@ public class IndexWriter {
 		dataStream.close();
 	}
 
-
+	/**
+	 * Restores the file to empty.
+	 */
+	public void resetFile() {
+		try {
+			Files.deleteIfExists(indexFile);
+			Files.createFile(indexFile);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 
 	/**
 	 * @param args
