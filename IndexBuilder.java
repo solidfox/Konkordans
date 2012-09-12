@@ -8,15 +8,23 @@ import java.nio.file.Paths;
 
 public class IndexBuilder {
 
+	private HugeSortedWordIndex wordIndex;
+	
 	public static void main(String[] args) {
-		Tokenizer token = new Tokenizer("korpus");
-		IndexBuilder builder = new IndexBuilder();
-		HugeSortedWordIndex index = builder.fillInSortedMap(token);
-		SortedMap<String,Collection<Long>> map = index.getMap();
-		builder.printToFiles(map);
+		IndexBuilder builder = new IndexBuilder("korpus");
+		builder.writeIndexes("wordIndex", "instanceIndex");
 	}
-
-	public HugeSortedWordIndex fillInSortedMap(Tokenizer token){
+	
+	public IndexBuilder(String fileToIndex) {
+		Tokenizer tokenizer = new Tokenizer(fileToIndex);
+		wordIndex = buildIndex(tokenizer);
+	}
+	
+	public void writeIndexes(String wordIndexPath, String instanceIndexPath) {
+		this.writeIndexToFiles(wordIndexPath, instanceIndexPath);
+	}
+	
+	private HugeSortedWordIndex buildIndex(Tokenizer token){
 		
 		HugeSortedWordIndex index = new HugeSortedWordIndex();
 		
@@ -32,8 +40,10 @@ public class IndexBuilder {
 		 * och lägg till ordet med den motsvarande bytepositionen
 		 */
 		int percent = 0;
-		 while (token.hasNext()) {
+		while (token.hasNext()) {
+			// TODO invariant?
 			token.next();
+			
 			String word = token.getWord().toLowerCase();
 			long position = token.getBytePosition();
 			
@@ -55,35 +65,39 @@ public class IndexBuilder {
 	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
 	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
 	 */
-	private void printToFiles(SortedMap<String,Collection<Long>> map) {
+	private void writeIndexToFiles(String wordIndex, String instanceIndex) {
+		
+		SortedMap<String,Collection<Long>> map = this.wordIndex.getMap();
 		
 		System.out.println("Entering printToFiles");
 		
-		Path instanceIndexPath = Paths.get("instanceIndex");
-		Path wordIndexPath = Paths.get("wordIndex");
+		Path instanceIndexPath = Paths.get(instanceIndex);
+		Path wordIndexPath = Paths.get(wordIndex);
 		
 		this.ensureFresh(instanceIndexPath);
 		this.ensureFresh(wordIndexPath);
 		
-		IndexWriter instanceIndex = new IndexWriter(instanceIndexPath);
-		IndexWriter wordIndex = new IndexWriter(wordIndexPath);
+		IndexWriter instanceIndexFile = new IndexWriter(instanceIndexPath);
+		IndexWriter wordIndexFile = new IndexWriter(wordIndexPath);
 		
 		/*
-		First for-loop gets the amount of bytepositions we will get, and the nestled 
-		one iterates the elements and prints them out 
+		First for-loop steps through every word, writing out their instance count,
+		the nestled one then writes out all the bytepositions for each word. 
 		 */
 		for (Entry<String, Collection<Long>> entry : map.entrySet())
 		{
+			// TODO invariant?
 			String word = entry.getKey();
-			long instancePointer = instanceIndex.getFilePointer();
+			long instancesPointer = instanceIndexFile.getFilePointer();
 
 			Collection<Long> korpusPointers = entry.getValue();
 			
 			// Write to instanceIndex
 			try{
-				instanceIndex.writeInt(korpusPointers.size());
+				instanceIndexFile.writeInt(korpusPointers.size());
 				for (Long bytepos : korpusPointers) {
-					instanceIndex.writeLong(bytepos);
+					// TODO invariant?
+					instanceIndexFile.writeLong(bytepos);
 				}
 			}catch (Exception e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
@@ -91,15 +105,15 @@ public class IndexBuilder {
 			
 			// Write word index 
 			try{
-				wordIndex.writeUTF(word);
-				wordIndex.writeLong(instancePointer);
+				wordIndexFile.writeUTF(word);
+				wordIndexFile.writeLong(instancesPointer);
 			}catch (IOException e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
 			}
 		}
 		try {
-			instanceIndex.close();
-			wordIndex.close();
+			instanceIndexFile.close();
+			wordIndexFile.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

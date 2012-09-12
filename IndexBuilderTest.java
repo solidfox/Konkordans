@@ -8,7 +8,7 @@ import java.util.SortedMap;
 import org.junit.Test;
 
 public class IndexBuilderTest {
-
+	
 	@Test
 	public void fillInSortedMap() {
 		Tokenizer token = new Tokenizer("test/korpus-small");
