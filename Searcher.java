@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 /**
  * Quite full of bugs due to my brain working on overtime but I think you'll get the point.
@@ -13,48 +14,51 @@ import java.util.Map;
  *
  */
 public class Searcher {
-	
+
+	final Path trieRootPath;
 	final Path wordIndexPath;
 	final Path instanceIndexPath;
 	final Path korpusPath;
 	Map<String, Long> trieRoot;
-	
+
 	public Searcher(
+			String trieRootPath,
 			String wordIndexPath, 
 			String instanceIndexPath,
 			String korpusPath) {
+		this.trieRootPath			= Paths.get(trieRootPath);
 		this.wordIndexPath 			= Paths.get(wordIndexPath);
 		this.instanceIndexPath 		= Paths.get(instanceIndexPath);
 		this.korpusPath				= Paths.get(korpusPath);
-		
+
 		Stopwatch time = new Stopwatch();
-		
-		time.start();
-		this.trieRoot = this.buildTrieRoot();
-		time.stop();
-		
-		System.out.println(trieRoot.size() + " trupplets built in " + time.milliseconds() + " milliseconds. \n");
+
+//		time.start();
+//		this.trieRoot = this.buildTrieRoot();
+//		time.stop();
+//
+//		System.out.println(trieRoot.size() + " trupplets built in " + time.milliseconds() + " milliseconds. \n");
 	}
-	
+
 	public String findWord(String word) throws IOException {
 		// Get the truplet pointer
-		long trupletPointer = this.trieRoot.get(this.getTruplet(word));
+		long trupletPointer = this.getTrupletPointer(word);
 		// Find the word in the wordIndex
 		long instanceIndexPointer = this.findInstanceIndexPointer(trupletPointer, word);
 		// TODO handle if word didn't exist.
 		// Fetch instance pointers for word
 		long[] instancePointers = readInstancePointers(instanceIndexPointer);
-		
+
 		String result = this.buildResult(instancePointers, word);
-		
+
 		return result;
 	}
 
 	private Map<String, Long> buildTrieRoot() {
-		
+
 		final HashMap<String, Long> trieRoot = new HashMap<String, Long>();
 		final IndexReader wordIndexReader = new IndexReader(wordIndexPath); 
-		
+
 		String word = "";
 		long position = 0;
 		String lastTruplet = "";
@@ -71,18 +75,32 @@ public class Searcher {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+
 			final String truplet = this.getTruplet(word);
-			
+
 			if (! truplet.equals(lastTruplet)) {
 				lastTruplet = truplet;
 				trieRoot.put(truplet, position);
 			}
 		}
-		
+
 		return trieRoot;
 	}
-	
+
+	private long getTrupletPointer(String word) {
+		IndexReader trieRoot = new IndexReader(this.trieRootPath);
+		PerfectHashTruplet truplet = new PerfectHashTruplet(word);
+
+		try {
+			trieRoot.skip(truplet.hashCode()*8);
+			return trieRoot.readLong();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		throw new IllegalStateException();
+	}
+
 	/**
 	 * Returns the first three letters in a given string.
 	 * Or, if the string is shorter than 3 letters, returns the string unmodified.
@@ -95,7 +113,7 @@ public class Searcher {
 		final String truplet = word.substring(0, trupletEnd);
 		return truplet;
 	}
-	
+
 	/**
 	 * Returns -1 if no word was found.
 	 * @param wordIndexPointer
@@ -122,20 +140,20 @@ public class Searcher {
 			return -1;
 		}
 	}
-	
+
 	private long[] readInstancePointers(long instanceIndexPointer) {
 		try {
 			IndexReader instanceIndex = new IndexReader(instanceIndexPath);
-			
+
 			instanceIndex.skip(instanceIndexPointer);
-			
+
 			int instanceCount = instanceIndex.readInt();
-			
+
 			long[] instancePointers = new long[instanceCount];
 			for (int i = 0; i < instanceCount; i++) {
 				instancePointers[i] = instanceIndex.readLong();
 			}
-			
+
 			return instancePointers;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -143,42 +161,45 @@ public class Searcher {
 		}
 		throw new IllegalStateException("Reached illegal state while reading instance pointers.");
 	}
-	
+
 	private String buildResult(long[] instancePointers, String word) throws IOException {
-		IndexReader korpus = new IndexReader(Paths.get("korpus"));
+		IndexReader korpus = new IndexReader(korpusPath);
 		StringBuilder out = new StringBuilder(instancePointers.length * 70);
 		int desiredNumberOfResults = 25;
 		int wordLength = word.length();
-		
+
 		Arrays.sort(instancePointers);
-		
+
 		int numberOfResults = instancePointers.length;
 		out.append("There are " + numberOfResults + " instances of the word.\n");
+
+
+
+				numberOfResults = (numberOfResults > desiredNumberOfResults ? desiredNumberOfResults : numberOfResults);
+
+				long lastPointer = 0;
+				for (int i = 0; i < numberOfResults; i++) {
+					long pointer = instancePointers[i];
+					long bytesToSkip = pointer - lastPointer - 30;
+					// Make sure we don't try to skip backwards
+					bytesToSkip = (bytesToSkip >= 0 ? bytesToSkip : 0);
+					korpus.skip(bytesToSkip);
+					//korpus.mark();
+					String context = korpus.readChars(60 + wordLength);
+					//korpus.reset();
+					context = context.replace("\n", " ");
+					out.append(context);
+					out.append("\n");
+					lastPointer = korpus.getFilePointer();
+				}
+			
+
 		
-		numberOfResults = (numberOfResults > desiredNumberOfResults ? desiredNumberOfResults : numberOfResults);
-		
-		long lastPointer = 0;
-		for (int i = 0; i < numberOfResults; i++) {
-			long pointer = instancePointers[i] - 30;
-			long bytesToSkip = pointer - lastPointer;
-			// TODO what if we've already skipped the previous bytes?
-			// TODO that is, if the word exists in close succession
-			// Make sure we don't try to skip backwards
-			bytesToSkip = (bytesToSkip >= 0 ? bytesToSkip : 0);
-			korpus.skip(bytesToSkip);
-			korpus.mark();
-			String context = korpus.readChars(60 + wordLength);
-			korpus.reset();
-			context = context.replace("\n", " ");
-			out.append(context);
-			out.append("\n");
-			lastPointer = korpus.getFilePointer();
-		}
 		return out.toString();
 	}
 
 	public static void main(String[] args) {
-		Searcher searcher = new Searcher("wordIndex", "instanceIndex", "korpus");
+		Searcher searcher = new Searcher("trieRoot", "wordIndex", "instanceIndex", "korpus");
 		Stopwatch time = new Stopwatch();
 		time.start();
 		try {

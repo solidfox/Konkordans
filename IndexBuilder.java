@@ -1,6 +1,8 @@
 import java.util.*;
 import java.util.Map.Entry;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,7 +14,7 @@ public class IndexBuilder {
 	
 	public static void main(String[] args) {
 		IndexBuilder builder = new IndexBuilder("korpus");
-		builder.writeIndexes("wordIndex", "instanceIndex");
+		builder.writeIndexes("trieRoot", "wordIndex", "instanceIndex");
 	}
 	
 	public IndexBuilder(String fileToIndex) {
@@ -20,8 +22,8 @@ public class IndexBuilder {
 		wordIndex = buildIndex(tokenizer);
 	}
 	
-	public void writeIndexes(String wordIndexPath, String instanceIndexPath) {
-		this.writeIndexToFiles(wordIndexPath, instanceIndexPath);
+	public void writeIndexes(String trieRootPath, String wordIndexPath, String instanceIndexPath) {
+		this.writeIndexToFiles(trieRootPath, wordIndexPath, instanceIndexPath);
 	}
 	
 	private HugeSortedWordIndex buildIndex(Tokenizer token){
@@ -65,48 +67,77 @@ public class IndexBuilder {
 	 * Därefter skapar den en ny lista(för att hålla enklare koll på den med hjälp av en variabel)
 	 * I den varje sån lista---> Skriv ut occurance av det ordet, och sedan bytepositionen(integern)  
 	 */
-	private void writeIndexToFiles(String wordIndex, String instanceIndex) {
-		
+	private void writeIndexToFiles(String trieRoot, String wordIndex, String instanceIndex) {
 		SortedMap<String,Collection<Long>> map = this.wordIndex.getMap();
+		
 		
 		System.out.println("Entering printToFiles");
 		
 		Path instanceIndexPath = Paths.get(instanceIndex);
 		Path wordIndexPath = Paths.get(wordIndex);
+		Path trieRootPath = Paths.get(trieRoot);
 		
 		this.ensureFresh(instanceIndexPath);
 		this.ensureFresh(wordIndexPath);
+		this.ensureFresh(trieRootPath);
 		
 		IndexWriter instanceIndexFile = new IndexWriter(instanceIndexPath);
 		IndexWriter wordIndexFile = new IndexWriter(wordIndexPath);
+		RandomAccessFile trieRootFile = null;
+		try {
+			trieRootFile = new RandomAccessFile(trieRoot, "rw");
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		
 		/*
 		First for-loop steps through every word, writing out their instance count,
 		the nestled one then writes out all the bytepositions for each word. 
 		 */
+		
+		
+		String lastTruplet = "";
 		for (Entry<String, Collection<Long>> entry : map.entrySet())
 		{
 			// TODO invariant?
 			String word = entry.getKey();
-			long instancesPointer = instanceIndexFile.getFilePointer();
+			long wordIndexPointer = wordIndexFile.getFilePointer();
+			long instanceIndexPointer = instanceIndexFile.getFilePointer();
+			
 
 			Collection<Long> korpusPointers = entry.getValue();
 			
-			// Write to instanceIndex
+			
 			try{
+				PerfectHashTruplet truplet = new PerfectHashTruplet(word);
+				if (!truplet.toString().equals(lastTruplet)) {
+					lastTruplet = truplet.toString();
+					// Write to trieRoot
+					int trupletHash = truplet.hashCode(); //get hash code
+					
+					if (trieRootFile.length() < trupletHash*8) {
+						trieRootFile.setLength(trupletHash*8);
+					}
+					
+					trieRootFile.seek(trupletHash*8);
+					
+					trieRootFile.writeLong(wordIndexPointer); //print wordPointer in rootIndex
+				}
+				
+				
+				// Write word index
+				
+				wordIndexFile.writeUTF(word);
+				wordIndexFile.writeLong(instanceIndexPointer);
+				
+				// Write to instanceIndex
 				instanceIndexFile.writeInt(korpusPointers.size());
 				for (Long bytepos : korpusPointers) {
 					// TODO invariant?
 					instanceIndexFile.writeLong(bytepos);
 				}
-			}catch (Exception e){//Catch exception if any
-				System.err.println("Error: " + e.getMessage());
-			}
-			
-			// Write word index 
-			try{
-				wordIndexFile.writeUTF(word);
-				wordIndexFile.writeLong(instancesPointer);
+				
 			}catch (IOException e){//Catch exception if any
 				System.err.println("Error: " + e.getMessage());
 			}
@@ -114,6 +145,7 @@ public class IndexBuilder {
 		try {
 			instanceIndexFile.close();
 			wordIndexFile.close();
+			trieRootFile.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -123,9 +155,7 @@ public class IndexBuilder {
 	
 	private void ensureFresh(Path path) {
 		try {
-			if (Files.exists(path)) {
-				Files.delete(path);
-			}
+			Files.deleteIfExists(path);
 			Files.createFile(path);
 		} catch (IOException e) {
 			// TODO auto generated

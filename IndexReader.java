@@ -90,6 +90,9 @@ UTFDataFormatException - if the bytes do not represent a valid modified UTF-8 en
 		dataStream.skip(bytes);
 	}
 	
+	public int readByte() throws IOException {
+		return dataStream.read();
+	}
 	
 	public String readChars(int numberOfChars) throws IOException {
 		byte[] bytes = new byte[numberOfChars];

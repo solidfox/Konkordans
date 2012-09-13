@@ -80,7 +80,7 @@ public class Tokenizer {
 	
 	private String readWord() {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream(); 
-		byte currentChar = readByte();
+		int currentChar = readByte();
 		// Remove irrelevant bytes
 		while (junk(currentChar) && !this.eof) {
 			currentChar = readByte();
@@ -111,10 +111,10 @@ public class Tokenizer {
 	}
 	
 	// Read one byte from the file
-	private byte readByte() {
-		byte b = 0;
+	private int readByte() {
+		int b = 0;
 		try {
-			b = (byte) stream.read();
+			b = stream.read();
 		} catch (IOException e) {
 			// TODO
 			e.printStackTrace();
@@ -134,15 +134,24 @@ public class Tokenizer {
 	 * @param b the byte to check
 	 * @return true if the byte is not relevant. false if it is relevant.
 	 */
-	private boolean junk(byte b) {
-		if (b >= 0x01 && b <= 0x2F ||
-			b >= 0x3A && b <= 0x40 ||
-			b >= 0x5B && b <= 0x60 ||
-			b >= 0x7B && b <= 0xBF ||
-			b == 0xD7 || b == 0xF7) {
-			return true;
-		}
+	private boolean junk(int b) {
+//		if (b >= 0x01 && b <= 0x2F ||
+//		b >= 0x30 && b <= 0x39 || // 0-9
+//		b >= 0x3A && b <= 0x40 ||
+//		b >= 0x5B && b <= 0x60 ||
+//		b >= 0x7B && b <= 0xBF ||
+//		b == 0xD7 || b == 0xF7) {
+//		return true;
+	if (!(
+		b >= 0x61 && b <= 0x7A ||
+		b >= 0x41 && b <= 0x5A ||
+		b == 0xC4 || b == 0xC5 || b == 0xB5 ||
+		b == 0xE4 || b == 0xE5 || b == 0xF6
+		)) {
+		return true;
+	} else {
 		return false;
+	}
 	}
 	
 	/**
